@@ -148,8 +148,7 @@ yhat_i <- predict_row(row_vec, coefficients = coefs)
 # for each coefficient, apply update using partial derivative
 coefs <- sapply(1:length(coefs), function (k) {
   coefs[k] - l_rate*(yhat_i - y[i])*row_vec[k]
-  }
-)
+})
 
 # note: sapply() is just a slightly more efficient for loop where we want to "apply" a function to a vector of values separately, and return it as *s*imply as possible (hopefully as a vector!)
 
@@ -167,22 +166,20 @@ Now we have the code for a single observation, we need to implement the stochast
 coefs = c(0,0,0) # (beta_0,beta_1,beta_2)
 l_rate = 0.01
 
-for (i in sample(1:nrow(X))) { 
-  
+for (i in sample(1:nrow(X))) {
 # extract the row of data we are considering, and convert it to a numeric vector
-row_vec <- as.numeric(X[i,]) # make row easier to handle
-
-# predict the outcome given the current model coefficients       
-yhat_i <- predict_row(row_vec, coefficients = coefs)
-      
-# for each coefficient, apply update using partial derivative
-coefs <- sapply(1:length(coefs), function (k) {
-  coefs[k] - l_rate*(yhat_i - y[i])*row_vec[k]
-}
-)
-
+  row_vec <- as.numeric(X[i,]) # make row easier to handle
   
+# predict the outcome given the current model coefficients
+  yhat_i <- predict_row(row_vec, coefficients = coefs)
+  
+# for each coefficient, apply update using partial derivative
+  coefs <- sapply(1:length(coefs), function (k) {
+    coefs[k] - l_rate*(yhat_i - y[i])*row_vec[k]
+  })
 }
+
+coefs
 ```
 
 ### Repeated updates
@@ -202,11 +199,11 @@ for (epoch in 1:epochs) {
     yhat_i <- predict_row(row_vec, coefficients = coefs)
     coefs <- sapply(1:length(coefs), function (k) {
       coefs[k] - l_rate*(yhat_i - y[i])*row_vec[k]
-    }
-    )
+    })
   }
 }
 
+coefs
 ```
 
 ### Convert our estimator into a function!
@@ -224,36 +221,35 @@ Finally, the model should return the final coefficient values as a vector.
 
 
 ```{r}
-train <- function(_, _, ______, ______) {
+train <- function(X, y, l_rate, epochs) {
   
   # Instantiate model with basic guess of 0 for all coefficients 
-  coefs <- rep(0, ____(X))
+  coefs <- rep(0, ncol(X))
   
   # Use code from before
-  for _______________ {
-    for ________________________ { # sampling the indices shuffles the order
-      
-      # code from before
-      
+  for (epoch in 1:epochs) {
+    for (i in sample(1:nrow(X))) {
+      row_vec <- as.numeric(X[i,])
+      yhat_i <- predict_row(row_vec, coefficients = coefs)
+      coefs <- sapply(1:length(coefs), function (k) {
+        coefs[k] - l_rate*(yhat_i - y[i])*row_vec[k]
+      })
     }
-    
-    # still inside first for loop
-    
+  
     # calculate current error
-    yhat <- _____(X, 1, predict_row, coefficients = coefs)
-    MSE_epoch <- MSE(y, ____)
-    NLL_epoch <- NLL(y, ____)
-    
+    yhat <- apply(X, 1, predict_row, coefficients = coefs)
+    MSE_epoch <- MSE(y, yhat)
+    NLL_epoch <- NLL(y, yhat)
+
     # report the error to the user
     message(
       paste0(
-        "Iteration ", _ ,"/",epochs," | NLL = ", round(_________,5),"; MSE = ", round(_________,5)
+        "Iteration ", epoch ,"/",epochs," | NLL = ", round(NLL_epoch, 5),"; MSE = ", round(MSE_epoch, 5)
       )
     )
-    
   }
-  
-  return(_____) # output the final estimates
+    
+  return(coefs) # output the final estimates
 }
 ```
 
@@ -262,7 +258,7 @@ train <- function(_, _, ______, ______) {
 Now we have everything to estimate our logistic regression parameters, train a model that conducts 50 epochs of training, using a learning rate of 0.01, and our training data X and y:
 
 ```{r}
-coef_model <- train(________________________________)
+coef_model <- train(X = X, y = y, l_rate = 0.01, epochs = 10)
 ```
 
 Notice that quite quickly our error statistics converge on stable parameters, suggesting the training is done. If we now inspect the estimated coefficients themselves, you'll see just how close we got:
